@@ -1,0 +1,37 @@
+# MiniMax Provider Configuration
+# 用于文本嵌入和长文本处理
+
+name: "MiniMax"
+provider_type: "openai-compatible"
+enabled: true
+
+connection:
+  base_url: "https://api.minimax.chat/v1"
+  api_key_env: "MINIMAX_API_KEY"
+
+# 聊天模型
+default_model: "abab6.5s-chat"
+
+defaults:
+  temperature: 0.7
+  max_tokens: 4096
+
+models:
+  - id: "abab6.5s-chat"
+    name: "ABAB 6.5s Chat"
+    context_length: 245760
+    description: "长上下文模型，适合处理长文档"
+  
+  - id: "abab6.5g-chat"
+    name: "ABAB 6.5g Chat"
+    context_length: 8192
+    description: "通用对话模型"
+
+# 嵌入模型
+embedding:
+  default_model: "embo-01"
+  models:
+    - id: "embo-01"
+      name: "Embedding 01"
+      dimensions: 1536
+      description: "文本嵌入模型，用于语义搜索"

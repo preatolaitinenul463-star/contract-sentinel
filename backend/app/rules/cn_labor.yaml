@@ -1,0 +1,79 @@
+# 中国大陆 - 劳动/人事合同规则包
+jurisdiction: "CN"
+contract_type: "labor"
+
+rules:
+  # 高风险规则
+  - id: "cn_labor_probation_excessive"
+    severity: "high"
+    name: "试用期违规"
+    description: "试用期超过法定最长期限，可能违反《劳动合同法》"
+    pattern_keywords: ["试用期", "试用", "考核期"]
+    check_type: "llm_assisted"
+    suggestion: "试用期需符合法定上限：3年以上固定期限或无固定期限合同，试用期不超过6个月"
+
+  - id: "cn_labor_noncompete_excessive"
+    severity: "high"
+    name: "竞业限制过度"
+    description: "竞业限制期限、范围或补偿可能不合规"
+    pattern_keywords: ["竞业限制", "竞业禁止", "同业竞争", "竞业"]
+    check_type: "llm_assisted"
+    suggestion: "竞业限制期限不超过2年，需支付经济补偿（不低于离职前12个月平均工资的30%）"
+
+  - id: "cn_labor_penalty_illegal"
+    severity: "high"
+    name: "违法扣款/罚款"
+    description: "对员工设置罚款或扣款条款可能违法"
+    pattern_keywords: ["罚款", "扣款", "扣发", "处罚"]
+    check_type: "keyword"
+    suggestion: "用人单位无权对员工进行罚款，建议删除相关条款"
+
+  - id: "cn_labor_overtime_forced"
+    severity: "high"
+    name: "强制加班条款"
+    description: "强制加班或加班工资不合规"
+    pattern_keywords: ["加班", "延长工作", "休息日工作"]
+    check_type: "llm_assisted"
+    suggestion: "加班需员工同意，且需支付法定加班工资（1.5/2/3倍）"
+
+  # 中风险规则
+  - id: "cn_labor_training_bond"
+    severity: "medium"
+    name: "培训服务期约定"
+    description: "培训费用和服务期约定需符合法律规定"
+    pattern_keywords: ["培训", "服务期", "培训费"]
+    check_type: "llm_assisted"
+    suggestion: "仅专项培训可约定服务期，违约金不超过培训费用"
+
+  - id: "cn_labor_confidential_broad"
+    severity: "medium"
+    name: "保密范围过宽"
+    description: "保密义务范围不合理，可能影响员工正常就业"
+    pattern_keywords: ["保密", "商业秘密", "机密信息"]
+    check_type: "llm_assisted"
+    suggestion: "保密范围应明确具体，不应过度限制员工合法权益"
+
+  - id: "cn_labor_ip_broad"
+    severity: "medium"
+    name: "知识产权归属过宽"
+    description: "职务发明归属约定可能过于宽泛"
+    pattern_keywords: ["知识产权", "职务发明", "职务作品"]
+    check_type: "llm_assisted"
+    suggestion: "职务发明归属应符合《专利法》规定，非职务发明应归员工所有"
+
+  # 低风险规则
+  - id: "cn_labor_termination_notice"
+    severity: "low"
+    name: "解除通知期"
+    description: "解除劳动合同通知期约定"
+    pattern_keywords: ["解除", "终止", "离职", "辞职"]
+    check_type: "llm_assisted"
+    suggestion: "员工提前30日书面通知可解除，试用期提前3日"
+
+  - id: "cn_labor_handover"
+    severity: "low"
+    name: "工作交接约定"
+    description: "工作交接要求"
+    pattern_keywords: ["交接", "移交", "办理离职"]
+    check_type: "llm_assisted"
+    suggestion: "工作交接应在合理期限内完成，不得以此延迟办理离职手续"

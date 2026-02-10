@@ -1,0 +1,84 @@
+# 中国大陆 - 服务合同规则包
+jurisdiction: "CN"
+contract_type: "service"
+
+rules:
+  # 高风险规则
+  - id: "cn_svc_sla_missing"
+    severity: "high"
+    name: "服务标准/SLA缺失"
+    description: "未约定明确的服务水平标准（SLA），服务质量无法量化考核"
+    pattern_keywords: ["服务标准", "服务水平", "SLA", "服务质量"]
+    check_type: "rule_match"
+    rule_logic: "NOT contains_any('服务标准','SLA','服务水平','响应时间','可用性')"
+    suggestion: "建议增加SLA条款：明确服务可用性（如99.9%）、响应时间、处理时效等量化指标"
+
+  - id: "cn_svc_acceptance_unclear"
+    severity: "high"
+    name: "验收标准不明确"
+    description: "服务交付的验收标准不清晰，可能导致甲乙双方对服务完成的认定产生争议"
+    pattern_keywords: ["验收", "交付", "完成", "成果"]
+    check_type: "rule_match"
+    rule_logic: "NOT contains_any('验收标准','验收条件','验收流程','合格标准')"
+    suggestion: "建议明确约定验收标准、验收流程、验收期限和争议处理机制"
+
+  - id: "cn_svc_ip_unclear"
+    severity: "high"
+    name: "服务成果知识产权归属不清"
+    description: "委托服务产生的知识产权归属未明确约定"
+    pattern_keywords: ["知识产权", "著作权", "成果", "作品"]
+    check_type: "keyword"
+    suggestion: "建议明确约定：服务成果知识产权归委托方所有，服务方保留技术方案的使用权（或反之）"
+
+  # 中风险规则
+  - id: "cn_svc_scope_change"
+    severity: "medium"
+    name: "服务范围变更机制缺失"
+    description: "未约定服务范围变更的流程和费用调整机制"
+    pattern_keywords: ["变更", "修改", "调整", "需求变更"]
+    check_type: "rule_match"
+    rule_logic: "NOT contains_any('变更流程','变更控制','书面确认','费用调整')"
+    suggestion: "建议增加变更管理条款：需求变更需书面确认，涉及工期和费用调整应另行协商"
+
+  - id: "cn_svc_personnel_replace"
+    severity: "medium"
+    name: "人员替换限制不足"
+    description: "服务方可随意替换服务人员，可能影响服务质量和连续性"
+    pattern_keywords: ["人员", "替换", "更换", "调换"]
+    check_type: "keyword"
+    suggestion: "建议约定关键人员替换需委托方同意，替换人员资质不低于原人员"
+
+  - id: "cn_svc_force_majeure"
+    severity: "medium"
+    name: "不可抗力范围不当扩大"
+    description: "将非不可抗力事件纳入不可抗力范围，服务方可借此逃避责任"
+    pattern_keywords: ["不可抗力", "免责", "系统故障", "技术原因"]
+    check_type: "keyword"
+    suggestion: "建议严格界定不可抗力范围（自然灾害、政策变化等），不包括技术故障、人为失误"
+
+  - id: "cn_svc_confidentiality"
+    severity: "medium"
+    name: "数据保密责任不足"
+    description: "服务过程中接触的甲方数据缺乏保密和安全保障"
+    pattern_keywords: ["数据", "保密", "安全", "隐私"]
+    check_type: "rule_match"
+    rule_logic: "NOT contains_any('数据保密','信息安全','数据安全','保密责任')"
+    suggestion: "建议增加数据安全条款：服务方需对甲方数据严格保密，服务结束后返还或销毁"
+
+  # 低风险规则
+  - id: "cn_svc_reporting"
+    severity: "low"
+    name: "服务报告机制缺失"
+    description: "未约定服务方的定期汇报机制"
+    pattern_keywords: ["报告", "汇报", "进度", "周报"]
+    check_type: "rule_match"
+    rule_logic: "NOT contains_any('报告','汇报','进度','反馈')"
+    suggestion: "建议约定服务方定期（如每周/每月）提交服务报告，包括进度、问题和计划"
+
+  - id: "cn_svc_insurance"
+    severity: "low"
+    name: "责任保险缺失"
+    description: "服务方未购买职业责任保险，风险兜底能力不足"
+    pattern_keywords: ["保险", "责任保险", "险种"]
+    check_type: "keyword"
+    suggestion: "建议要求服务方购买相应的职业责任保险，并在合同中约定保额要求"

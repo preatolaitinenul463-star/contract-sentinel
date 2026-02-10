@@ -1,0 +1,79 @@
+# 中国大陆 - 技术/软件/数据处理合同规则包
+jurisdiction: "CN"
+contract_type: "tech"
+
+rules:
+  # 高风险规则
+  - id: "cn_tech_data_export"
+    severity: "high"
+    name: "数据出境风险"
+    description: "涉及跨境数据传输，需符合数据出境安全评估要求"
+    pattern_keywords: ["数据出境", "跨境传输", "境外", "海外", "数据跨境"]
+    check_type: "keyword"
+    suggestion: "需进行数据出境安全评估或申报标准合同，确保合规"
+
+  - id: "cn_tech_personal_info"
+    severity: "high"
+    name: "个人信息处理不合规"
+    description: "个人信息处理缺少必要授权或安全措施"
+    pattern_keywords: ["个人信息", "个人数据", "用户数据", "隐私"]
+    check_type: "llm_assisted"
+    suggestion: "需明确个人信息处理的目的、方式、范围，并取得数据主体同意"
+
+  - id: "cn_tech_source_code"
+    severity: "high"
+    name: "源代码交付风险"
+    description: "源代码交付条款可能导致核心资产流失"
+    pattern_keywords: ["源代码", "源码", "技术资料", "开发文档"]
+    check_type: "llm_assisted"
+    suggestion: "建议限制源代码交付范围，或采用托管方式保护"
+
+  - id: "cn_tech_unlimited_use"
+    severity: "high"
+    name: "授权范围过宽"
+    description: "技术/数据使用授权范围不明确或过宽"
+    pattern_keywords: ["永久授权", "无限使用", "全部权利", "独占"]
+    check_type: "keyword"
+    suggestion: "建议明确授权范围、期限、地域和使用方式"
+
+  # 中风险规则
+  - id: "cn_tech_sla_missing"
+    severity: "medium"
+    name: "服务水平协议缺失"
+    description: "未约定明确的服务水平指标和补救措施"
+    pattern_keywords: ["服务水平", "SLA", "可用性", "响应时间"]
+    check_type: "llm_assisted"
+    suggestion: "建议约定明确的SLA指标（可用性、响应时间等）和违约补救"
+
+  - id: "cn_tech_acceptance_vague"
+    severity: "medium"
+    name: "验收标准不明确"
+    description: "技术交付物验收标准不清晰，可能产生争议"
+    pattern_keywords: ["验收", "测试", "交付标准", "合格标准"]
+    check_type: "llm_assisted"
+    suggestion: "建议明确验收标准、验收流程和验收期限"
+
+  - id: "cn_tech_maintenance"
+    severity: "medium"
+    name: "维护责任不清"
+    description: "系统维护、升级责任未明确约定"
+    pattern_keywords: ["维护", "运维", "升级", "更新", "技术支持"]
+    check_type: "llm_assisted"
+    suggestion: "建议明确维护期限、内容、费用和响应要求"
+
+  - id: "cn_tech_third_party"
+    severity: "medium"
+    name: "第三方组件风险"
+    description: "使用第三方组件可能存在知识产权或安全风险"
+    pattern_keywords: ["第三方", "开源", "外采", "外购"]
+    check_type: "llm_assisted"
+    suggestion: "建议要求披露第三方组件清单，并明确合规责任"
+
+  # 低风险规则
+  - id: "cn_tech_doc_missing"
+    severity: "low"
+    name: "文档交付不完整"
+    description: "技术文档交付要求不明确"
+    pattern_keywords: ["文档", "手册", "说明书", "技术规范"]
+    check_type: "llm_assisted"
+    suggestion: "建议明确交付的文档类型、格式和质量要求"

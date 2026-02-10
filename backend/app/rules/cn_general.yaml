@@ -1,0 +1,88 @@
+# 中国大陆 - 通用商事合同规则包
+jurisdiction: "CN"
+contract_type: "general"
+
+rules:
+  # 高风险规则
+  - id: "cn_jurisdiction_unfair"
+    severity: "high"
+    name: "管辖地明显不利"
+    description: "约定的管辖法院/仲裁机构在对方所在地，可能不利于我方诉讼"
+    pattern_keywords: ["管辖", "仲裁", "争议解决", "诉讼"]
+    check_type: "llm_assisted"
+    suggestion: "建议修改为：由合同签订地、原告所在地或被告所在地人民法院管辖"
+
+  - id: "cn_unlimited_liability"
+    severity: "high"
+    name: "无限责任/无上限赔偿"
+    description: "未限定违约赔偿上限，存在无限责任风险"
+    pattern_keywords: ["赔偿", "损失", "违约金", "全部损失"]
+    check_type: "rule_match"
+    rule_logic: "NOT contains_any('不超过','上限','以...为限','最高不超过')"
+    suggestion: "建议增加赔偿上限条款：违约赔偿金额以合同总金额为上限"
+
+  - id: "cn_unilateral_termination"
+    severity: "high"
+    name: "单方解除权不对等"
+    description: "仅一方享有单方解除权，权利义务不对等"
+    pattern_keywords: ["单方解除", "有权解除", "可以解除"]
+    check_type: "llm_assisted"
+    suggestion: "建议修改为双方对等的解除条件，或增加解除通知期和补偿条款"
+
+  - id: "cn_penalty_excessive"
+    severity: "high"
+    name: "违约金过高"
+    description: "违约金超过造成损失的30%可能被法院酌减"
+    pattern_keywords: ["违约金", "逾期付款", "日万分之"]
+    check_type: "llm_assisted"
+    suggestion: "建议违约金设定在合理范围内，一般不超过损失的30%"
+
+  # 中风险规则
+  - id: "cn_auto_renewal"
+    severity: "medium"
+    name: "自动续约条款"
+    description: "合同到期自动续约，可能导致被动续约"
+    pattern_keywords: ["自动续", "自动延", "展期"]
+    check_type: "keyword"
+    suggestion: "建议明确续约需双方书面确认，或设置合理的通知解约期限"
+
+  - id: "cn_confidentiality_unlimited"
+    severity: "medium"
+    name: "保密期限过长"
+    description: "保密期限无限制或过长，增加合规负担"
+    pattern_keywords: ["永久保密", "无限期保密", "长期保密"]
+    check_type: "keyword"
+    suggestion: "建议设定合理的保密期限，一般为合同终止后3-5年"
+
+  - id: "cn_ip_unclear"
+    severity: "medium"
+    name: "知识产权归属不清"
+    description: "未明确约定知识产权归属，可能产生争议"
+    pattern_keywords: ["知识产权", "著作权", "专利", "商标"]
+    check_type: "llm_assisted"
+    suggestion: "建议明确约定各类知识产权的归属和使用权限"
+
+  - id: "cn_payment_late"
+    severity: "medium"
+    name: "付款条件苛刻"
+    description: "付款条件设置不合理，可能影响资金回收"
+    pattern_keywords: ["付款", "支付", "结算", "账期"]
+    check_type: "llm_assisted"
+    suggestion: "建议明确付款节点、金额和逾期处理方式"
+
+  # 低风险规则
+  - id: "cn_notice_informal"
+    severity: "low"
+    name: "通知方式不规范"
+    description: "未约定有效的通知送达方式"
+    pattern_keywords: ["通知", "送达", "书面"]
+    check_type: "llm_assisted"
+    suggestion: "建议明确通知的方式（书面/邮件/传真）和生效时间"
+
+  - id: "cn_force_majeure_vague"
+    severity: "low"
+    name: "不可抗力定义模糊"
+    description: "不可抗力范围未明确界定"
+    pattern_keywords: ["不可抗力"]
+    check_type: "llm_assisted"
+    suggestion: "建议明确列举不可抗力的具体情形和处理方式"

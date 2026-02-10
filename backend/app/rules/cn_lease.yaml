@@ -1,0 +1,82 @@
+# 中国大陆 - 租赁合同规则包
+jurisdiction: "CN"
+contract_type: "lease"
+
+rules:
+  # 高风险规则
+  - id: "cn_lease_rent_increase_unlimited"
+    severity: "high"
+    name: "租金调整无上限"
+    description: "出租方有权单方调整租金且无上限约束，承租方面临租金大幅上涨风险"
+    pattern_keywords: ["租金调整", "调整租金", "涨租", "租金变更"]
+    check_type: "rule_match"
+    rule_logic: "NOT contains_any('上限','不超过','涨幅','CPI','双方协商')"
+    suggestion: "建议约定租金调整幅度上限（如年涨幅不超过5%或CPI涨幅），并需双方协商一致"
+
+  - id: "cn_lease_deposit_no_return"
+    severity: "high"
+    name: "押金退还条件苛刻"
+    description: "押金退还条件不明确或过于苛刻，承租方面临押金损失风险"
+    pattern_keywords: ["押金", "保证金", "履约保证"]
+    check_type: "rule_match"
+    rule_logic: "NOT contains_any('退还','返还','归还','退回')"
+    suggestion: "建议明确约定押金退还条件、时间（如合同到期后15日内无息退还）和扣减标准"
+
+  - id: "cn_lease_early_termination_penalty"
+    severity: "high"
+    name: "提前退租违约金过高"
+    description: "承租方提前退租需支付高额违约金，退出成本过大"
+    pattern_keywords: ["提前退租", "提前解除", "提前终止", "退租"]
+    check_type: "keyword"
+    suggestion: "建议设定合理的提前退租违约金（如1-2个月租金），并约定合理通知期"
+
+  # 中风险规则
+  - id: "cn_lease_maintenance_unclear"
+    severity: "medium"
+    name: "维修责任划分不清"
+    description: "未明确出租方与承租方的维修责任划分，可能产生争议"
+    pattern_keywords: ["维修", "修缮", "维护", "损坏"]
+    check_type: "keyword"
+    suggestion: "建议明确约定：房屋结构性维修由出租方负责，日常维护由承租方负责，费用承担标准"
+
+  - id: "cn_lease_sublease_prohibited"
+    severity: "medium"
+    name: "转租限制过严"
+    description: "完全禁止转租可能影响承租方经营灵活性"
+    pattern_keywords: ["转租", "分租", "转让"]
+    check_type: "keyword"
+    suggestion: "建议约定经出租方书面同意后可转租，出租方不得无理由拒绝"
+
+  - id: "cn_lease_renewal_priority"
+    severity: "medium"
+    name: "续租优先权缺失"
+    description: "未约定承租方的优先续租权，合同到期后可能无法继续使用"
+    pattern_keywords: ["续租", "续约", "优先"]
+    check_type: "rule_match"
+    rule_logic: "NOT contains_any('优先续租','优先承租','优先权')"
+    suggestion: "建议增加承租方在同等条件下享有优先续租权的条款"
+
+  - id: "cn_lease_purpose_restriction"
+    severity: "medium"
+    name: "用途限制过窄"
+    description: "租赁用途限制过于严格，可能影响承租方正常经营"
+    pattern_keywords: ["用途", "使用范围", "经营范围", "仅限"]
+    check_type: "keyword"
+    suggestion: "建议合理约定租赁用途，保留一定灵活性，并明确变更用途的协商程序"
+
+  # 低风险规则
+  - id: "cn_lease_delivery_condition"
+    severity: "low"
+    name: "交付条件不明确"
+    description: "未约定房屋交付时的条件标准和验收程序"
+    pattern_keywords: ["交付", "验收", "移交", "交房"]
+    check_type: "keyword"
+    suggestion: "建议明确交付条件（装修标准、设施清单）和验收程序，形成书面交接记录"
+
+  - id: "cn_lease_tax_burden"
+    severity: "low"
+    name: "税费承担约定不清"
+    description: "未明确租赁相关税费的承担方"
+    pattern_keywords: ["税费", "发票", "税金", "印花税"]
+    check_type: "keyword"
+    suggestion: "建议明确约定租赁税费（房产税、增值税等）由哪方承担，以及发票开具要求"

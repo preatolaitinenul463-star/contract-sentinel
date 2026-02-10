@@ -1,0 +1,48 @@
+# OpenAI Compatible Provider Configuration
+# For local models (Ollama, vLLM, LM Studio, etc.)
+name: "OpenAI-Compatible"
+provider_type: "openai-compatible"
+enabled: true
+
+connection:
+  base_url: "${OPENAI_COMPATIBLE_BASE_URL:http://localhost:11434/v1}"
+  api_key_env: "OPENAI_COMPATIBLE_API_KEY"
+
+default_model: "qwen2.5:7b"
+
+defaults:
+  temperature: 0.3
+  max_tokens: 4096
+
+# Models available depend on your local setup
+# These are examples for Ollama
+models:
+  - id: "qwen2.5:7b"
+    name: "Qwen 2.5 7B"
+    context_length: 32000
+    description: "Qwen 2.5 7B local model"
+  - id: "qwen2.5:14b"
+    name: "Qwen 2.5 14B"
+    context_length: 32000
+    description: "Qwen 2.5 14B local model"
+  - id: "llama3.1:8b"
+    name: "Llama 3.1 8B"
+    context_length: 128000
+    description: "Llama 3.1 8B local model"
+
+embedding:
+  default_model: "nomic-embed-text"
+  defaults:
+    dimensions: 768
+    encoding_format: "float"
+  models:
+    - id: "nomic-embed-text"
+      name: "Nomic Embed Text"
+      dimensions: 768
+      max_input: 8192
+      description: "Nomic embedding model for Ollama"
+    - id: "bge-m3"
+      name: "BGE M3"
+      dimensions: 1024
+      max_input: 8192
+      description: "BGE M3 multilingual embedding"

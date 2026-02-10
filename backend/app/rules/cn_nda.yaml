@@ -1,0 +1,83 @@
+# 中国大陆 - 保密协议规则包
+jurisdiction: "CN"
+contract_type: "nda"
+
+rules:
+  # 高风险规则
+  - id: "cn_nda_scope_unlimited"
+    severity: "high"
+    name: "保密范围过宽"
+    description: "保密信息范围定义过于宽泛，几乎涵盖所有信息，增加合规负担"
+    pattern_keywords: ["保密信息", "机密信息", "秘密信息", "保密范围"]
+    check_type: "rule_match"
+    rule_logic: "NOT contains_any('不包括','除外','公知','公开信息','例外')"
+    suggestion: "建议明确界定保密信息范围，并列举例外情形（公知信息、独立开发、合法获得等）"
+
+  - id: "cn_nda_duration_unlimited"
+    severity: "high"
+    name: "保密期限无限制"
+    description: "保密义务无期限限制或期限过长（超过5年），不合理地限制信息使用"
+    pattern_keywords: ["永久保密", "无限期", "长期", "保密期限"]
+    check_type: "rule_match"
+    rule_logic: "NOT contains_any('年','期限届满','保密期为')"
+    suggestion: "建议设定合理的保密期限，一般为合同终止后2-5年，商业秘密可适当延长"
+
+  - id: "cn_nda_penalty_excessive"
+    severity: "high"
+    name: "违约赔偿金额过高"
+    description: "保密违约的赔偿金额明显过高或计算方式不合理"
+    pattern_keywords: ["违约赔偿", "违约金", "赔偿损失", "惩罚性"]
+    check_type: "keyword"
+    suggestion: "建议违约赔偿以实际损失为基础，设定合理上限，避免惩罚性赔偿条款"
+
+  # 中风险规则
+  - id: "cn_nda_non_compete_hidden"
+    severity: "medium"
+    name: "隐含竞业限制"
+    description: "保密协议中隐含竞业限制条款，可能限制员工/合作方的正常经营"
+    pattern_keywords: ["竞业", "竞争", "同类业务", "不得从事"]
+    check_type: "keyword"
+    suggestion: "建议将竞业限制与保密义务分开约定，竞业限制应支付补偿金（月工资30%以上）"
+
+  - id: "cn_nda_return_obligation"
+    severity: "medium"
+    name: "信息返还义务不清"
+    description: "协议终止后保密信息的返还或销毁义务不明确"
+    pattern_keywords: ["返还", "销毁", "删除", "归还"]
+    check_type: "rule_match"
+    rule_logic: "NOT contains_any('返还','销毁','删除','归还','清除')"
+    suggestion: "建议明确约定协议终止后应在指定期限内返还或销毁所有保密信息，并提供销毁证明"
+
+  - id: "cn_nda_disclosure_to_third"
+    severity: "medium"
+    name: "第三方披露限制"
+    description: "对保密信息向关联方、顾问等第三方的披露限制不明确"
+    pattern_keywords: ["第三方", "关联方", "顾问", "员工"]
+    check_type: "keyword"
+    suggestion: "建议明确可披露的第三方范围（如律师、审计师），并要求第三方签署保密承诺"
+
+  - id: "cn_nda_unilateral_obligation"
+    severity: "medium"
+    name: "保密义务单方承担"
+    description: "仅一方承担保密义务，权利义务不对等"
+    pattern_keywords: ["一方", "甲方", "乙方", "接收方"]
+    check_type: "llm_assisted"
+    suggestion: "建议改为双向保密义务，或对单向保密给予合理的对价补偿"
+
+  # 低风险规则
+  - id: "cn_nda_marking"
+    severity: "low"
+    name: "保密标识要求缺失"
+    description: "未要求对保密信息进行标识或标记"
+    pattern_keywords: ["标识", "标记", "标注", "密级"]
+    check_type: "rule_match"
+    rule_logic: "NOT contains_any('标识','标记','标注','密级','机密')"
+    suggestion: "建议要求对书面保密信息标注'机密'或'保密'字样，便于管理和追溯"
+
+  - id: "cn_nda_governing_law"
+    severity: "low"
+    name: "适用法律不明确"
+    description: "跨境保密协议未明确适用法律"
+    pattern_keywords: ["适用法律", "管辖", "准据法"]
+    check_type: "keyword"
+    suggestion: "建议明确约定适用中国法律，争议由指定法院或仲裁机构管辖"

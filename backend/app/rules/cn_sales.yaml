@@ -1,0 +1,84 @@
+# 中国大陆 - 买卖合同规则包
+jurisdiction: "CN"
+contract_type: "sales"
+
+rules:
+  # 高风险规则
+  - id: "cn_sales_quality_no_standard"
+    severity: "high"
+    name: "质量标准缺失"
+    description: "未约定明确的产品质量标准或验收标准，可能导致质量争议"
+    pattern_keywords: ["质量", "标准", "规格", "品质"]
+    check_type: "rule_match"
+    rule_logic: "NOT contains_any('国标','行业标准','GB','质量标准','验收标准','合格')"
+    suggestion: "建议明确约定产品质量标准（国标/行标/企标），并约定检验方法和判定依据"
+
+  - id: "cn_sales_ownership_risk"
+    severity: "high"
+    name: "所有权转移时点不明"
+    description: "未约定货物所有权转移时点，可能影响风险承担"
+    pattern_keywords: ["所有权", "风险转移", "交付", "验收"]
+    check_type: "rule_match"
+    rule_logic: "NOT contains_any('所有权转移','风险转移','交付时')"
+    suggestion: "建议明确约定所有权和风险在交付验收合格时转移给买方"
+
+  - id: "cn_sales_return_no_clause"
+    severity: "high"
+    name: "退货条款缺失"
+    description: "未约定退货条件和程序，质量问题时买方权益无保障"
+    pattern_keywords: ["退货", "退换", "不合格", "瑕疵"]
+    check_type: "rule_match"
+    rule_logic: "NOT contains_any('退货','退换','换货','拒收')"
+    suggestion: "建议增加退货条款：质量不合格时买方有权退货，卖方承担退货运费和相关损失"
+
+  # 中风险规则
+  - id: "cn_sales_delivery_delay"
+    severity: "medium"
+    name: "交货延迟无违约责任"
+    description: "卖方逾期交货无明确违约责任，买方催促无力"
+    pattern_keywords: ["交货", "交付", "发货", "到货"]
+    check_type: "rule_match"
+    rule_logic: "NOT contains_any('逾期交货','延迟交货','违约金','赔偿')"
+    suggestion: "建议约定逾期交货的违约金（如日万分之三）和买方解除权（超过30天未交货）"
+
+  - id: "cn_sales_transport_risk"
+    severity: "medium"
+    name: "运输风险承担不明"
+    description: "未明确运输过程中货物损毁灭失的风险承担方"
+    pattern_keywords: ["运输", "运费", "物流", "快递", "发运"]
+    check_type: "keyword"
+    suggestion: "建议明确约定运输方式、运费承担和运输途中风险承担（建议FOB/CIF等贸易术语）"
+
+  - id: "cn_sales_inspection_period"
+    severity: "medium"
+    name: "验收期限不合理"
+    description: "验收期限过短或未约定，可能来不及发现质量问题"
+    pattern_keywords: ["验收", "检验", "检测", "质检"]
+    check_type: "keyword"
+    suggestion: "建议约定合理的验收期限（如到货后7-15日），超期未提出异议视为合格"
+
+  - id: "cn_sales_warranty_missing"
+    severity: "medium"
+    name: "质保条款缺失"
+    description: "未约定产品质保期和质保范围"
+    pattern_keywords: ["质保", "保修", "保质", "售后"]
+    check_type: "rule_match"
+    rule_logic: "NOT contains_any('质保','保修期','保质期','保修')"
+    suggestion: "建议增加质保条款：明确质保期限（如12个月）、质保范围和质保方式"
+
+  # 低风险规则
+  - id: "cn_sales_packaging"
+    severity: "low"
+    name: "包装标准未约定"
+    description: "未约定包装标准和要求"
+    pattern_keywords: ["包装", "装箱", "标签"]
+    check_type: "keyword"
+    suggestion: "建议约定包装标准、标识要求，确保运输安全"
+
+  - id: "cn_sales_payment_milestone"
+    severity: "low"
+    name: "付款节点不清晰"
+    description: "付款时间和条件不够明确"
+    pattern_keywords: ["付款", "货款", "支付", "结算"]
+    check_type: "keyword"
+    suggestion: "建议明确约定付款节点（如预付30%、到货验收后60%、质保到期后10%）"

@@ -1,0 +1,28 @@
+# DeepSeek Provider Configuration
+name: "DeepSeek"
+provider_type: "openai-compatible"
+enabled: true
+
+connection:
+  base_url: "https://api.deepseek.com"
+  api_key_env: "DEEPSEEK_API_KEY"
+
+default_model: "deepseek-chat"
+
+defaults:
+  temperature: 0.3
+  max_tokens: 8192
+
+models:
+  - id: "deepseek-chat"
+    name: "DeepSeek Chat"
+    context_length: 128000
+    description: "DeepSeek V3 conversational model, cost-effective"
+  - id: "deepseek-reasoner"
+    name: "DeepSeek Reasoner"
+    context_length: 128000
+    description: "DeepSeek R1 reasoning model"
+
+# DeepSeek does not provide embedding API
+# Use OpenAI or other providers for embedding
+embedding: null
