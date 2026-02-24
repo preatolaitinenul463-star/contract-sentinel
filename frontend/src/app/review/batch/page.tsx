@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { cn, formatFileSize } from "@/lib/utils";
+import { withVisitorHeaders } from "@/lib/api";
 import Link from "next/link";
 
 interface QueueItem {
@@ -72,6 +73,7 @@ export default function BatchReviewPage() {
 
         const response = await fetch("/api/review/upload-and-review", {
           method: "POST",
+          headers: withVisitorHeaders(),
           body: formData,
         });
 

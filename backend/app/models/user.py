@@ -29,6 +29,7 @@ class User(Base):
     
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     
     plan_type: Mapped[PlanType] = mapped_column(
         SqlEnum(PlanType), 
@@ -52,6 +53,8 @@ class User(Base):
     # Relationships
     contracts = relationship("Contract", back_populates="user", lazy="selectin")
     chat_sessions = relationship("ChatSession", back_populates="user", lazy="selectin")
+    policies = relationship("UserPolicy", lazy="selectin")
+    feedback_items = relationship("ReviewFeedback", lazy="selectin")
     
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email})>"

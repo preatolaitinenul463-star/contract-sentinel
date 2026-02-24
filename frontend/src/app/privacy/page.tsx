@@ -41,10 +41,9 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="text-lg font-semibold text-foreground">五、数据保留</h2>
-          <p>1. 合同文件：自上传之日起保留1年，到期自动删除。</p>
-          <p>2. 审核结果：与合同文件同步保留和删除。</p>
-          <p>3. 审计日志：保留1年后自动清理。</p>
-          <p>4. 用户可随时申请提前删除数据。</p>
+          <p>1. 默认长期保存用户数据，以便用户持续查询历史记录和导出。</p>
+          <p>2. 用户可随时在设置中发起数据导出与账号注销。</p>
+          <p>3. 平台保留为安全审计目的留存必要日志的权利。</p>
         </section>
 
         <section>
@@ -55,13 +54,14 @@ export default function PrivacyPage() {
           <p>3. <strong>删除权</strong>：要求删除您的个人信息和数据。</p>
           <p>4. <strong>导出权</strong>：导出您的数据副本。</p>
           <p>5. <strong>注销权</strong>：注销您的账户。</p>
+          <p>6. <strong>隔离权</strong>：不同账户数据之间不互通，您可就异常访问申请核查。</p>
           <p>您可以在"设置"页面行使上述权利，或联系我们。</p>
         </section>
 
         <section>
           <h2 className="text-lg font-semibold text-foreground">七、联系我们</h2>
           <p>如对本隐私政策有任何疑问，请联系：</p>
-          <p>邮箱：privacy@contract-sentinel.ai</p>
+          <p>邮箱：2606536766@qq.com</p>
         </section>
       </div>
     </div>

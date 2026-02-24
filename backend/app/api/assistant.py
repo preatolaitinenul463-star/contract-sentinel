@@ -33,6 +33,7 @@ from app.pipeline.context import PipelineContext
 from app.pipeline.verification import verify_assistant_output, get_verification_decision
 from app.policy.jurisdiction import get_disclaimer, get_compliance_rules
 from app.telemetry import record_counter
+from app.services.policy_service import PolicyService
 
 router = APIRouter()
 
@@ -263,6 +264,13 @@ async def legal_assistant_stream(
 
         compliance_rules = get_compliance_rules(jurisdiction)
         disclaimer = get_disclaimer(jurisdiction)
+        async with async_session_maker() as pdb:
+            policy_service = PolicyService(db=pdb)
+            resolved_policy = await policy_service.get_or_default(
+                user_id=user_id,
+                contract_type="general" if mode in ("qa", "case_analysis", "doc_draft") else "general",
+                jurisdiction=jurisdiction,
+            )
 
         system_prompt = f"""你是"合同哨兵"平台的法律助手，当前模式：{mode_config['label']}。
 
@@ -288,6 +296,8 @@ async def legal_assistant_stream(
 
 ## 合规要求
 {chr(10).join('- ' + r for r in compliance_rules)}
+
+{resolved_policy.as_prompt_block()}
 
 ## 免责声明（必须在末尾输出）
 {disclaimer}
@@ -347,6 +357,11 @@ async def legal_assistant_stream(
             "verification_decision": decision,
             "sources_count": len(sources),
             "official_count": sum(1 for s in sources if s.get("trusted")),
+            "policy_source": resolved_policy.source,
+            "policy_version": resolved_policy.policy_version,
+            "prompt_version": "assistant-v1-policy",
+            "rulepack_version": "rules-v1",
+            "model_version": "deepseek-reasoner",
         }
 
         saved_session_id = session_id
@@ -377,6 +392,8 @@ async def legal_assistant_stream(
             "mode": mode,
             "structured": is_structured,
             "verification_decision": decision,
+            "policy_source": resolved_policy.source,
+            "policy_version": resolved_policy.policy_version,
         }
         if report_json and is_structured:
             done_data["report_json"] = report_json

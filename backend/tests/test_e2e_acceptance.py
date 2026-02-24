@@ -81,6 +81,8 @@ def test_assistant_stream_qa(token):
     done = [e for e in events if e.get("type") == "done"][0]
     assert "run_id" in done
     assert "verification_decision" in done
+    assert "policy_source" in done
+    assert "policy_version" in done
     assert done.get("mode") == "qa"
 
     # Sources should be present (may be empty if search fails)
@@ -104,6 +106,38 @@ def test_assistant_stream_case_analysis(token):
     done = [e for e in events if e.get("type") == "done"]
     assert len(done) == 1
     assert done[0].get("mode") == "case_analysis"
+
+
+def test_policy_endpoints(token):
+    """Policy read/update should work for authenticated user."""
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    preview = httpx.post(
+        f"{BASE}/policy/me/parse-preview",
+        headers=headers,
+        json={"standard_text": "必须审查违约责任。不得接受预付款。"},
+        timeout=10,
+    )
+    assert preview.status_code == 200
+
+    updated = httpx.put(
+        f"{BASE}/policy/me?contract_type=general&jurisdiction=CN",
+        headers=headers,
+        json={
+            "standard_text": "必须审查违约责任。不得接受预付款。",
+            "prefer_user_standard": True,
+            "fallback_to_default": True,
+        },
+        timeout=10,
+    )
+    assert updated.status_code == 200
+
+    current = httpx.get(
+        f"{BASE}/policy/me?contract_type=general&jurisdiction=CN",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=10,
+    )
+    assert current.status_code == 200
+    assert "must_review_items" in current.json()
 
 
 # ═══════════════════════════════════════════════════════════

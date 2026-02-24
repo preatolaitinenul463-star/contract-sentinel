@@ -110,10 +110,7 @@ export default function TeamPage() {
 
       {/* Plan note */}
       <div className="rounded-lg bg-muted p-4 text-center text-sm text-muted-foreground">
-        <p>团队协作功能需要基础版或更高套餐。</p>
-        <a href="/pricing" className="text-primary hover:underline">
-          查看套餐详情
-        </a>
+        <p>团队协作功能正在迭代中，当前版本全免费开放。</p>
       </div>
     </div>
   );

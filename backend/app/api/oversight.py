@@ -17,6 +17,7 @@ from app.models.pipeline import (
     ApprovalState, PipelineStatus,
 )
 from app.api.deps import get_current_user
+from app.services.audit_service import AuditService
 
 router = APIRouter()
 
@@ -120,8 +121,9 @@ async def list_runs(
             selectinload(PipelineRun.verifications),
             selectinload(PipelineRun.approval),
         )
-        .where(PipelineRun.user_id == current_user.id)
     )
+    if not current_user.is_admin:
+        q = q.where(PipelineRun.user_id == current_user.id)
     if feature:
         q = q.where(PipelineRun.feature == feature)
     if status_filter:
@@ -130,6 +132,14 @@ async def list_runs(
 
     result = await db.execute(q)
     runs = result.scalars().all()
+    if current_user.is_admin:
+        audit = AuditService(db)
+        await audit.log(
+            action="admin_view_runs",
+            user_id=current_user.id,
+            resource_type="pipeline_run",
+            metadata={"count": len(runs), "feature": feature, "status": status_filter},
+        )
     return [_run_to_dict(r) for r in runs]
 
 
@@ -148,12 +158,23 @@ async def get_run_detail(
             selectinload(PipelineRun.verifications),
             selectinload(PipelineRun.approval),
         )
-        .where(PipelineRun.run_id == run_id, PipelineRun.user_id == current_user.id)
     )
+    if current_user.is_admin:
+        q = q.where(PipelineRun.run_id == run_id)
+    else:
+        q = q.where(PipelineRun.run_id == run_id, PipelineRun.user_id == current_user.id)
     result = await db.execute(q)
     run = result.scalar_one_or_none()
     if not run:
         raise HTTPException(status_code=404, detail="运行记录不存在")
+    if current_user.is_admin:
+        audit = AuditService(db)
+        await audit.log(
+            action="admin_view_run_detail",
+            user_id=current_user.id,
+            resource_type="pipeline_run",
+            metadata={"run_id": run_id, "target_user_id": run.user_id},
+        )
     return _run_to_dict(run, include_detail=True)
 
 

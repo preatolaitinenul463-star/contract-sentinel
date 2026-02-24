@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { FileText, GitCompare, MessageSquare, Upload, ArrowRight, Clock, Shield } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/lib/store";
+import { withVisitorHeaders } from "@/lib/api";
 
 const features = [
   {
@@ -46,7 +47,7 @@ export default function HomePage() {
     if (isAuthenticated && token) {
       // Load recent contracts
       fetch("/api/contracts?page=1&page_size=5", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: withVisitorHeaders({ Authorization: `Bearer ${token}` }),
       })
         .then((r) => r.ok ? r.json() : null)
         .then((data) => {
@@ -56,7 +57,7 @@ export default function HomePage() {
 
       // Load usage stats
       fetch("/api/quota/usage", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: withVisitorHeaders({ Authorization: `Bearer ${token}` }),
       })
         .then((r) => r.ok ? r.json() : null)
         .then((data) => {
@@ -81,12 +82,12 @@ export default function HomePage() {
       {/* Welcome Section */}
       <div className="rounded-lg border bg-card p-6 md:p-8">
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-          {isAuthenticated ? `欢迎回来，${user?.full_name || "用户"}` : "欢迎使用合同哨兵"}
+          欢迎使用合同哨兵
         </h1>
         <p className="mt-2 text-muted-foreground">
           智能合同审核、对比与法律助手平台，为您的合同安全保驾护航
         </p>
-        {usageStats && (
+        {isAuthenticated && usageStats && (
           <div className="mt-4 flex flex-wrap gap-4">
             <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5 text-sm">
               <Shield className="h-4 w-4 text-primary" />
@@ -169,16 +170,13 @@ export default function HomePage() {
                 </span>
               </div>
             ))}
-            <Link
-              href="/history"
-              className="block text-center text-sm text-primary hover:underline pt-2"
-            >
-              查看全部历史记录
-            </Link>
+            <p className="block text-center text-sm text-muted-foreground pt-2">
+              历史记录已合并至各功能页面
+            </p>
           </div>
         ) : (
           <div className="mt-4 flex items-center justify-center py-8 text-muted-foreground">
-            <p>{isAuthenticated ? "暂无活动记录，上传合同开始使用" : "登录后查看活动记录"}</p>
+            <p>暂无活动记录，上传合同开始使用</p>
           </div>
         )}
       </div>

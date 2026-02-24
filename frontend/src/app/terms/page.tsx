@@ -7,7 +7,7 @@ export default function TermsPage() {
       <div className="prose prose-sm max-w-none space-y-6 text-muted-foreground">
         <section>
           <h2 className="text-lg font-semibold text-foreground">一、服务说明</h2>
-          <p>合同哨兵（以下简称"本平台"）是一个基于人工智能技术的合同审核、对比和法务咨询平台。本平台提供的分析结果和建议仅供参考，不构成正式法律意见。</p>
+          <p>合同哨兵（以下简称"本平台"）是一个基于人工智能技术的合同审核、对比和法务咨询平台。本平台提供的分析结果和建议仅供参考，不构成正式法律意见或律师执业服务。</p>
         </section>
 
         <section>
@@ -30,6 +30,7 @@ export default function TermsPage() {
           <p>1. 本平台提供的审核结果和法律建议仅供参考，不替代专业律师的法律意见。</p>
           <p>2. 用户因依赖本平台提供的信息而做出的决策，本平台不承担法律责任。</p>
           <p>3. 涉及重大法律决策时，请务必咨询持证律师。</p>
+          <p>4. 本平台不承诺“100%准确”，仅承诺尽力提供可追溯、可复核的分析结果。</p>
         </section>
 
         <section>
@@ -42,8 +43,10 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold text-foreground">六、数据安全</h2>
           <p>1. 我们采用加密技术保护用户数据安全。</p>
-          <p>2. 未经用户授权，我们不会向第三方提供用户数据。</p>
-          <p>3. 详见《隐私政策》。</p>
+          <p>2. 不同用户账号数据相互隔离，默认仅用户本人可见。</p>
+          <p>3. 平台管理员可在运维、安全审计、风控与合规场景下按最小必要原则访问数据，并保留审计日志。</p>
+          <p>4. 除法律法规要求外，未经用户授权，我们不会向无关第三方提供用户数据。</p>
+          <p>5. 详见《隐私政策》。</p>
         </section>
 
         <section>
@@ -53,7 +56,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-lg font-semibold text-foreground">八、联系方式</h2>
-          <p>如有任何问题，请联系：support@contract-sentinel.ai</p>
+          <p>如有任何问题，请联系：2606536766@qq.com</p>
         </section>
       </div>
     </div>

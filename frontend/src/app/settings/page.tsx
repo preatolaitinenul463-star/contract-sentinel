@@ -1,30 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { User, Key, Bell, CreditCard, Loader2, CheckCircle, Trash2, Download } from "lucide-react";
+import { User, Bell, Loader2, CheckCircle, Trash2, Download } from "lucide-react";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/store";
-import { authApi } from "@/lib/api";
+import { withVisitorHeaders } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { id: "profile", label: "个人信息", icon: User },
-  { id: "api", label: "API密钥", icon: Key },
   { id: "notifications", label: "通知设置", icon: Bell },
-  { id: "billing", label: "套餐与账单", icon: CreditCard },
   { id: "account", label: "账号管理", icon: Trash2 },
 ];
-
-interface UsageStats {
-  reviews_this_month: number;
-  comparisons_this_month: number;
-  assistant_messages_today: number;
-  reviews_remaining: number;
-  comparisons_remaining: number;
-  assistant_messages_remaining: number;
-  tokens_used_this_month: number;
-}
 
 export default function SettingsPage() {
   const { user, token, login } = useAuthStore();
@@ -41,10 +29,6 @@ export default function SettingsPage() {
   const [notifUpdates, setNotifUpdates] = useState(false);
   const [notifSaved, setNotifSaved] = useState(false);
 
-  // Usage stats
-  const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
-  const [usageLoading, setUsageLoading] = useState(false);
-
   useEffect(() => {
     if (user) {
       setFullName(user.full_name || "");
@@ -52,28 +36,13 @@ export default function SettingsPage() {
   }, [user]);
 
   useEffect(() => {
-    if (activeTab === "billing" && token) {
-      loadUsageStats();
-    }
-  }, [activeTab, token]);
-
-  const loadUsageStats = async () => {
-    if (!token) return;
-    setUsageLoading(true);
-    try {
-      const response = await fetch("/api/quota/usage", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUsageStats(data);
+    if (typeof window !== "undefined") {
+      const param = new URLSearchParams(window.location.search).get("tab");
+      if (param && tabs.some((t) => t.id === param)) {
+        setActiveTab(param);
       }
-    } catch (error) {
-      console.error("Failed to load usage stats:", error);
-    } finally {
-      setUsageLoading(false);
     }
-  };
+  }, []);
 
   const saveProfile = async () => {
     if (!token) return;
@@ -82,10 +51,10 @@ export default function SettingsPage() {
     try {
       const response = await fetch(`/api/auth/me?full_name=${encodeURIComponent(fullName)}`, {
         method: "PUT",
-        headers: {
+        headers: withVisitorHeaders({
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-        },
+        }),
       });
       if (response.ok) {
         const updatedUser = await response.json();
@@ -109,16 +78,6 @@ export default function SettingsPage() {
     );
     setNotifSaved(true);
     setTimeout(() => setNotifSaved(false), 3000);
-  };
-
-  const planLabel = (planType: string) => {
-    const map: Record<string, string> = {
-      free: "免费版",
-      basic: "基础版",
-      pro: "专业版",
-      enterprise: "企业版",
-    };
-    return map[planType] || planType;
   };
 
   return (
@@ -199,43 +158,6 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {activeTab === "api" && (
-            <div className="space-y-6">
-              <h2 className="text-lg font-semibold">API密钥配置</h2>
-              <p className="text-sm text-muted-foreground">
-                系统已预配置 DeepSeek API 用于合同审核和智能问答。如需使用自定义密钥，请联系管理员。
-              </p>
-              <div className="space-y-4">
-                <div className="rounded-lg border p-4 bg-muted/50">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-sm">DeepSeek API</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        deepseek-chat - 主力模型
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">
-                      已配置
-                    </span>
-                  </div>
-                </div>
-                <div className="rounded-lg border p-4 bg-muted/50">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-sm">MiniMax Embedding</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        embo-01 - 文本嵌入
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">
-                      已配置
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {activeTab === "notifications" && (
             <div className="space-y-6">
               <h2 className="text-lg font-semibold">通知设置</h2>
@@ -295,7 +217,7 @@ export default function SettingsPage() {
                     if (!token) return;
                     try {
                       const resp = await fetch("/api/auth/me/export", {
-                        headers: { Authorization: `Bearer ${token}` },
+                        headers: withVisitorHeaders({ Authorization: `Bearer ${token}` }),
                       });
                       if (resp.ok) {
                         const data = await resp.json();
@@ -332,7 +254,7 @@ export default function SettingsPage() {
                     try {
                       const resp = await fetch("/api/auth/me", {
                         method: "DELETE",
-                        headers: { Authorization: `Bearer ${token}` },
+                        headers: withVisitorHeaders({ Authorization: `Bearer ${token}` }),
                       });
                       if (resp.ok) {
                         const { logout: doLogout } = useAuthStore.getState();
@@ -351,99 +273,7 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {activeTab === "billing" && (
-            <div className="space-y-6">
-              <h2 className="text-lg font-semibold">套餐与账单</h2>
-              <div className="rounded-lg border p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">当前套餐</p>
-                    <p className="text-2xl font-bold text-primary">
-                      {planLabel(user?.plan_type || "free")}
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => (window.location.href = "/pricing")}
-                  >
-                    升级套餐
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium">使用情况</p>
-                {usageLoading ? (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground p-4">
-                    <Loader2 className="h-4 w-4 animate-spin" /> 加载中...
-                  </div>
-                ) : usageStats ? (
-                  <div className="space-y-3">
-                    <UsageBar
-                      label="本月审核次数"
-                      used={usageStats.reviews_this_month}
-                      remaining={usageStats.reviews_remaining}
-                    />
-                    <UsageBar
-                      label="本月对比次数"
-                      used={usageStats.comparisons_this_month}
-                      remaining={usageStats.comparisons_remaining}
-                    />
-                    <UsageBar
-                      label="今日助理消息"
-                      used={usageStats.assistant_messages_today}
-                      remaining={usageStats.assistant_messages_remaining}
-                    />
-                    <div className="rounded-lg bg-muted p-3">
-                      <div className="flex justify-between text-sm">
-                        <span>本月 Token 消耗</span>
-                        <span>{usageStats.tokens_used_this_month.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="rounded-lg bg-muted p-4">
-                    <p className="text-sm text-muted-foreground">
-                      登录后查看使用情况
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function UsageBar({
-  label,
-  used,
-  remaining,
-}: {
-  label: string;
-  used: number;
-  remaining: number;
-}) {
-  const total = used + remaining;
-  const pct = total > 0 ? Math.min((used / total) * 100, 100) : 0;
-
-  return (
-    <div className="rounded-lg bg-muted p-3">
-      <div className="flex justify-between text-sm">
-        <span>{label}</span>
-        <span>
-          {used} / {total}
-        </span>
-      </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-background">
-        <div
-          className={cn(
-            "h-full transition-all",
-            pct > 80 ? "bg-red-500" : pct > 50 ? "bg-yellow-500" : "bg-primary"
-          )}
-          style={{ width: `${pct}%` }}
-        />
       </div>
     </div>
   );

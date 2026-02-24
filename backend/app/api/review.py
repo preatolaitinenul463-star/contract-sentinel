@@ -23,8 +23,50 @@ from app.config import settings
 from app.pipeline.context import PipelineContext
 from app.pipeline.verification import verify_review_output, verify_redline_output, get_verification_decision
 from loguru import logger
+from app.services.policy_service import PolicyService, suggest_contract_type
+from app.services.audit_service import AuditService
+from app.models.policy import ReviewFeedback
 
 router = APIRouter()
+
+
+@router.post("/suggest-type")
+async def suggest_review_contract_type(payload: dict):
+    text = (payload or {}).get("text", "")
+    if not text or not str(text).strip():
+        raise HTTPException(status_code=400, detail="text 不能为空")
+    return suggest_contract_type(str(text))
+
+
+@router.post("/feedback/{run_id}")
+async def submit_review_feedback(
+    run_id: str,
+    payload: dict,
+    current_user: User = Depends(get_current_user),
+):
+    helpful = payload.get("helpful")
+    issue_type = payload.get("issue_type")
+    comment = payload.get("comment")
+    if issue_type and issue_type not in ("false_positive", "missed_risk", "other"):
+        raise HTTPException(status_code=400, detail="issue_type 不合法")
+    async with async_session_maker() as db:
+        row = ReviewFeedback(
+            user_id=current_user.id,
+            run_id=run_id,
+            helpful=helpful if isinstance(helpful, bool) else None,
+            issue_type=issue_type,
+            comment=(comment or "")[:1000] if comment else None,
+        )
+        db.add(row)
+        audit = AuditService(db)
+        await audit.log(
+            action="review_feedback",
+            user_id=current_user.id,
+            resource_type="pipeline_run",
+            metadata={"run_id": run_id, "helpful": helpful, "issue_type": issue_type},
+        )
+        await db.commit()
+    return {"status": "ok"}
 
 
 async def real_review_stream(
@@ -60,6 +102,18 @@ async def real_review_stream(
     )
     
     try:
+        policy_meta = {
+            "source": "default",
+            "version": "default-v1",
+        }
+        async with async_session_maker() as pdb:
+            policy_service = PolicyService(pdb)
+            resolved_policy = await policy_service.get_or_default(
+                user_id=ctx.get("user_id") if ctx else None,
+                contract_type=contract_type,
+                jurisdiction=jurisdiction,
+            )
+            policy_meta = {"source": resolved_policy.source, "version": resolved_policy.policy_version}
         # ============================================
         # Stage 1: 文档解析 (已完成)
         # ============================================
@@ -287,6 +341,8 @@ async def real_review_stream(
 4. 法律合规性问题
 5. 模糊不清需要澄清的条款
 
+{resolved_policy.as_prompt_block()}
+
 ## 输出要求
 逐条分析，每发现一个风险就立即输出，格式：
 ===RISK_START===
@@ -474,6 +530,11 @@ reason: 修改理由
         pctx.result_summary = {
             "high": high_count, "medium": medium_count, "low": low_count,
             "total": len(all_risks), "verification": v_decision,
+            "policy_source": policy_meta["source"],
+            "policy_version": policy_meta["version"],
+            "prompt_version": "review-v1-policy",
+            "rulepack_version": "rules-v1",
+            "model_version": "deepseek-reasoner",
         }
         try:
             await pctx.persist()
@@ -489,6 +550,8 @@ reason: 修改理由
             "review_id": review_id,
             "run_id": pctx.run_id,
             "verification_decision": v_decision,
+            "policy_source": policy_meta["source"],
+            "policy_version": policy_meta["version"],
             "stats": {
                 "high": high_count,
                 "medium": medium_count,
@@ -517,6 +580,39 @@ reason: 修改理由
 def _sse(data: dict) -> str:
     """Format as SSE event."""
     return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+async def _cached_review_stream(review: ReviewResult) -> AsyncGenerator[str, None]:
+    """Return cached review result as a short SSE stream."""
+    stats = {
+        "high": review.high_risk_count or 0,
+        "medium": review.medium_risk_count or 0,
+        "low": review.low_risk_count or 0,
+        "total": (review.high_risk_count or 0) + (review.medium_risk_count or 0) + (review.low_risk_count or 0),
+    }
+    if not stats["total"] and isinstance(review.risk_items, list):
+        stats["total"] = len(review.risk_items)
+
+    yield _sse({
+        "stage": "dedup",
+        "status": "completed",
+        "progress": 35,
+        "message": "检测到重复合同，已复用历史审核结果",
+        "agent": "结果复用",
+    })
+    await asyncio.sleep(0.05)
+    yield _sse({
+        "stage": "complete",
+        "status": "completed",
+        "progress": 100,
+        "message": "审核完成（复用）",
+        "summary": review.summary or "复用历史审核结果",
+        "review_id": review.id,
+        "run_id": None,
+        "cached": True,
+        "stats": stats,
+        "all_risks": review.risk_items or [],
+    })
 
 
 def _get_role_description(party_role: str, power_dynamic: str) -> str:
@@ -784,6 +880,34 @@ async def upload_and_review(
     """上传合同并直接开始审核（流式返回），结果持久化到数据库"""
     # 读取文件内容
     content = await file.read()
+    file_hash = hashlib.sha256(content).hexdigest() if content else "none"
+
+    # 重复合同：同一用户同一文件哈希，直接复用最近一次审核结果
+    if current_user:
+        async with async_session_maker() as db:
+            dup_stmt = (
+                select(ReviewResult)
+                .join(Contract, Contract.id == ReviewResult.contract_id)
+                .where(
+                    Contract.user_id == current_user.id,
+                    Contract.file_hash == file_hash,
+                    Contract.status == ContractStatus.REVIEWED,
+                )
+                .order_by(ReviewResult.created_at.desc())
+                .limit(1)
+            )
+            dup_result = await db.execute(dup_stmt)
+            cached_review = dup_result.scalar_one_or_none()
+            if cached_review:
+                return StreamingResponse(
+                    _cached_review_stream(cached_review),
+                    media_type="text/event-stream",
+                    headers={
+                        "Cache-Control": "no-cache",
+                        "Connection": "keep-alive",
+                        "X-Accel-Buffering": "no",
+                    },
+                )
     
     # 解析文档文本
     contract_text = ""
@@ -854,6 +978,7 @@ async def redline_review_stream(
     jurisdiction: str,
     party_role: str,
     power_dynamic: str,
+    user_id: Optional[int] = None,
 ) -> AsyncGenerator[str, None]:
     """批阅模式流水线 - 流式返回进度，最终生成批注版 Word 下载链接。"""
     import base64
@@ -864,11 +989,24 @@ async def redline_review_stream(
     # ── PipelineContext for redline ──
     pctx = PipelineContext(
         feature="redline",
+        user_id=user_id,
         jurisdiction=jurisdiction,
         input_text=contract_text[:5000],
     )
 
     try:
+        policy_meta = {
+            "source": "default",
+            "version": "default-v1",
+        }
+        async with async_session_maker() as pdb:
+            policy_service = PolicyService(pdb)
+            resolved_policy = await policy_service.get_or_default(
+                user_id=user_id,
+                contract_type=contract_type,
+                jurisdiction=jurisdiction,
+            )
+            policy_meta = {"source": resolved_policy.source, "version": resolved_policy.policy_version}
         # Stage 1: 文档解析
         pctx.add_event("doc_ingest", "completed", 10, f"文档解析完成 ({len(contract_text)} 字符)")
         yield _sse({"stage": "doc_ingest", "status": "completed", "progress": 10,
@@ -999,6 +1137,8 @@ async def redline_review_stream(
 3. suggestion 写出**修改后的完整替换文本**（直接替换原文的最终版本，不要写"建议"、"应"、"可以改为"等词）
 4. description 和 legal_basis 只在审核总结中展示，不会出现在修改标记中
 
+{resolved_policy.as_prompt_block()}
+
 ## 输出格式
 ===RISK_START===
 severity: high/medium/low
@@ -1092,6 +1232,11 @@ legal_basis: 法条
         pctx.result_summary = {
             "high": high_count, "medium": medium_count, "low": low_count,
             "total": len(all_risks), "verification": v_decision,
+            "policy_source": policy_meta["source"],
+            "policy_version": policy_meta["version"],
+            "prompt_version": "redline-v1-policy",
+            "rulepack_version": "rules-v1",
+            "model_version": "deepseek-reasoner",
         }
         try:
             await pctx.persist()
@@ -1104,6 +1249,8 @@ legal_basis: 法条
             "summary": summary,
             "run_id": pctx.run_id,
             "verification_decision": v_decision,
+            "policy_source": policy_meta["source"],
+            "policy_version": policy_meta["version"],
             "stats": {"high": high_count, "medium": medium_count, "low": low_count, "total": len(all_risks)},
             "all_risks": all_risks,
         }
@@ -1190,6 +1337,7 @@ async def upload_and_redline(
             jurisdiction=jurisdiction,
             party_role=party_role,
             power_dynamic=power_dynamic,
+            user_id=current_user.id if current_user else None,
         ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},

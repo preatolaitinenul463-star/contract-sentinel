@@ -6,6 +6,7 @@ interface User {
   email: string;
   full_name?: string;
   plan_type: string;
+  is_admin?: boolean;
 }
 
 interface AuthState {
@@ -19,11 +20,25 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      user: null,
+      user: {
+        id: 1,
+        email: "2606536766@qq.com",
+        full_name: "本地访客",
+        plan_type: "free",
+      },
       token: null,
-      isAuthenticated: false,
+      isAuthenticated: true,
       login: (user, token) => set({ user, token, isAuthenticated: true }),
-      logout: () => set({ user: null, token: null, isAuthenticated: false }),
+      logout: () => set({
+        user: {
+          id: 1,
+          email: "2606536766@qq.com",
+          full_name: "本地访客",
+          plan_type: "free",
+        },
+        token: null,
+        isAuthenticated: true,
+      }),
     }),
     {
       name: "auth-storage",

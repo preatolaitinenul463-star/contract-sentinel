@@ -27,6 +27,7 @@ class UserResponse(BaseModel):
     full_name: Optional[str]
     is_active: bool
     is_verified: bool
+    is_admin: bool
     plan_type: PlanType
     tokens_used: int
     reviews_count: int

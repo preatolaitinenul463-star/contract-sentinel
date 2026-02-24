@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, User, LogOut, Settings, Menu, ChevronRight, Home } from "lucide-react";
+import { Bell, User, Settings, Menu, ChevronRight, Home } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/lib/store";
@@ -12,11 +12,6 @@ const routeNames: Record<string, string> = {
   "/compare": "合同对比",
   "/assistant": "法律助手",
   "/settings": "设置",
-  "/pricing": "套餐价格",
-  "/oversight": "审阅工作台",
-  "/history": "历史记录",
-  "/auth/login": "登录",
-  "/auth/register": "注册",
   "/terms": "用户协议",
   "/privacy": "隐私政策",
 };
@@ -26,7 +21,7 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const pathname = usePathname();
 
   // Generate breadcrumb
@@ -70,52 +65,26 @@ export function Header({ onMenuClick }: HeaderProps) {
           <Bell className="h-5 w-5" />
         </button>
 
-        {/* User Menu */}
-        {isAuthenticated ? (
-          <div className="relative group">
-            <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-accent md:px-3 md:py-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <User className="h-4 w-4" />
-              </div>
-              <span className="hidden text-sm font-medium md:inline">
-                {user?.full_name || user?.email}
-              </span>
-            </button>
-
-            {/* Dropdown */}
-            <div className="absolute right-0 top-full mt-1 hidden w-48 rounded-lg border bg-card py-1 shadow-lg group-hover:block z-50">
-              <Link
-                href="/settings"
-                className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent"
-              >
-                <Settings className="h-4 w-4" />
-                设置
-              </Link>
-              <button
-                onClick={logout}
-                className="flex w-full items-center gap-2 px-4 py-2 text-sm text-destructive hover:bg-accent"
-              >
-                <LogOut className="h-4 w-4" />
-                退出登录
-              </button>
+        <div className="relative group">
+          <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-accent md:px-3 md:py-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <User className="h-4 w-4" />
             </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
+            <span className="hidden text-sm font-medium md:inline">
+              {user?.full_name || "本地用户"}
+            </span>
+          </button>
+
+          <div className="absolute right-0 top-full mt-1 hidden w-48 rounded-lg border bg-card py-1 shadow-lg group-hover:block z-50">
             <Link
-              href="/auth/login"
-              className="rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-accent md:px-4 md:py-2"
+              href="/settings"
+              className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent"
             >
-              登录
-            </Link>
-            <Link
-              href="/auth/register"
-              className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 md:px-4 md:py-2"
-            >
-              注册
+              <Settings className="h-4 w-4" />
+              设置
             </Link>
           </div>
-        )}
+        </div>
       </div>
     </header>
   );

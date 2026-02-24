@@ -28,8 +28,11 @@ async def list_audit_logs(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """List audit logs for the current user (traceability)."""
-    q = select(AuditLog).where(AuditLog.user_id == current_user.id)
+    """List audit logs for current user; admins can query all logs."""
+    if current_user.is_admin:
+        q = select(AuditLog)
+    else:
+        q = select(AuditLog).where(AuditLog.user_id == current_user.id)
     if from_date:
         q = q.where(AuditLog.created_at >= from_date)
     if to_date:
@@ -66,8 +69,11 @@ async def export_audit_logs(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Export audit logs for forensic / compliance (current user only)."""
-    q = select(AuditLog).where(AuditLog.user_id == current_user.id)
+    """Export audit logs; admins can export all records."""
+    if current_user.is_admin:
+        q = select(AuditLog)
+    else:
+        q = select(AuditLog).where(AuditLog.user_id == current_user.id)
     if from_date:
         q = q.where(AuditLog.created_at >= from_date)
     if to_date:

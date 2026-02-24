@@ -1,3 +1,6 @@
+from app.services.policy_service import PolicyService, suggest_contract_type
+
+__all__ = ["PolicyService", "suggest_contract_type"]
 """Business services layer."""
 from app.services.review_service import ReviewService
 from app.services.compare_service import CompareService

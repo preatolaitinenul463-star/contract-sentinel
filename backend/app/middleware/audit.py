@@ -113,7 +113,8 @@ class AuditMiddleware(BaseHTTPMiddleware):
                     settings.jwt_secret,
                     algorithms=[settings.jwt_algorithm],
                 )
-                user_id = payload.get("sub")
+                sub = payload.get("sub")
+                user_id = int(sub) if sub is not None else None
             except JWTError:
                 pass
 

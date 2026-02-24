@@ -18,7 +18,7 @@ class EmailService:
         self.smtp_port = getattr(settings, "smtp_port", 587)
         self.smtp_user = getattr(settings, "smtp_user", None)
         self.smtp_password = getattr(settings, "smtp_password", None)
-        self.from_email = getattr(settings, "from_email", "noreply@contract-sentinel.ai")
+        self.from_email = getattr(settings, "from_email", "2606536766@qq.com")
 
     async def send_email(
         self,

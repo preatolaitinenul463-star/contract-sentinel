@@ -10,8 +10,6 @@ import {
   Settings,
   Shield,
   X,
-  History,
-  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,8 +18,7 @@ const navigation = [
   { name: "合同审核", href: "/review", icon: FileText },
   { name: "合同对比", href: "/compare", icon: GitCompare },
   { name: "法律助手", href: "/assistant", icon: MessageSquare },
-  { name: "审阅工作台", href: "/oversight", icon: Eye },
-  { name: "历史记录", href: "/history", icon: History },
+  { name: "审核标准", href: "/policy", icon: Shield },
   { name: "设置", href: "/settings", icon: Settings },
 ];
 
@@ -84,16 +81,17 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       {/* Footer */}
       <div className="border-t p-4">
         <div className="rounded-lg bg-muted p-3">
-          <p className="text-xs font-medium">免费版</p>
+          <p className="text-xs font-medium">当前版本：全免费</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            已使用 0 / 10 次审核
+            无付费墙，无套餐限制
           </p>
-          <Link
-            href="/pricing"
-            className="mt-2 block text-xs font-medium text-primary hover:underline"
-          >
-            升级套餐
-          </Link>
+        </div>
+        <div className="mt-3 text-[11px] text-muted-foreground space-y-1">
+          <p>审核结果仅供参考，不构成法律意见。</p>
+          <div className="flex gap-2">
+            <Link href="/terms" className="hover:underline">用户协议</Link>
+            <Link href="/privacy" className="hover:underline">隐私政策</Link>
+          </div>
         </div>
       </div>
     </div>

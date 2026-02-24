@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, formatFileSize } from "@/lib/utils";
+import { withVisitorHeaders } from "@/lib/api";
 
 interface ChangeItem {
   id: string;
@@ -164,6 +165,7 @@ export default function ComparePage() {
       const apiBase = (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) ? "http://localhost:8000/api" : "/api";
       const response = await fetch(`${apiBase}/compare/upload-and-compare`, {
         method: "POST",
+        headers: withVisitorHeaders(),
         body: formData,
       });
 

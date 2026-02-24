@@ -12,25 +12,33 @@ interface ApiOptions extends RequestInit {
 }
 
 let _isRefreshing = false;
+const VISITOR_ID_KEY = "contract-sentinel-visitor-id";
+
+export function getVisitorId(): string {
+  if (typeof window === "undefined") return "server";
+  const existing = window.localStorage.getItem(VISITOR_ID_KEY);
+  if (existing) return existing;
+  const generated =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `visitor-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  window.localStorage.setItem(VISITOR_ID_KEY, generated);
+  return generated;
+}
+
+export function withVisitorHeaders(headers: HeadersInit = {}): HeadersInit {
+  return {
+    ...headers,
+    "X-Visitor-Id": getVisitorId(),
+  };
+}
 
 /**
  * Handle 401 errors - try to refresh token first, then redirect to login.
  */
 function handleAuthError() {
-  // Clear auth state
-  try {
-    const stored = localStorage.getItem("auth-storage");
-    if (stored) {
-      const state = JSON.parse(stored);
-      state.state = { user: null, token: null, isAuthenticated: false };
-      localStorage.setItem("auth-storage", JSON.stringify(state));
-    }
-  } catch {}
-
-  // Redirect to login (avoid redirect loops)
-  if (typeof window !== "undefined" && !window.location.pathname.startsWith("/auth")) {
-    window.location.href = "/auth/login";
-  }
+  // Login UI removed: silently keep guest mode.
+  return;
 }
 
 async function tryRefreshToken(currentToken: string): Promise<string | null> {
@@ -40,6 +48,7 @@ async function tryRefreshToken(currentToken: string): Promise<string | null> {
     const response = await fetch(`${API_BASE}/auth/refresh`, {
       method: "POST",
       headers: {
+        ...withVisitorHeaders(),
         "Content-Type": "application/json",
         Authorization: `Bearer ${currentToken}`,
       },
@@ -73,7 +82,7 @@ async function apiRequest<T>(
 
   const headers: HeadersInit = {
     "Content-Type": "application/json",
-    ...(options.headers || {}),
+    ...withVisitorHeaders(options.headers || {}),
   };
 
   if (token) {
@@ -133,20 +142,8 @@ async function apiRequest<T>(
 
 // Auth API
 export const authApi = {
-  register: (data: { email: string; password: string; full_name?: string }) =>
-    apiRequest("/auth/register", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-
-  login: (data: { email: string; password: string }) =>
-    apiRequest<{ access_token: string; token_type: string; expires_in: number }>(
-      "/auth/login",
-      {
-        method: "POST",
-        body: JSON.stringify(data),
-      }
-    ),
+  register: async () => ({ access_token: "", token_type: "bearer", expires_in: 0 }),
+  login: async () => ({ access_token: "", token_type: "bearer", expires_in: 0 }),
 
   me: (token: string) =>
     apiRequest("/auth/me", { token }),
@@ -178,6 +175,7 @@ export const contractApi = {
     const response = await fetch(`${API_BASE}/contracts/upload`, {
       method: "POST",
       headers: {
+        ...withVisitorHeaders(),
         Authorization: `Bearer ${token}`,
       },
       body: formData,
@@ -218,6 +216,7 @@ export const reviewApi = {
   streamProgress: (contractId: number, token: string) => {
     return fetch(`${API_BASE}/review/stream/${contractId}`, {
       headers: {
+        ...withVisitorHeaders(),
         Authorization: `Bearer ${token}`,
       },
     });
@@ -253,6 +252,7 @@ export const compareApi = {
 
     return fetch(`${API_BASE}/compare/upload-and-compare`, {
       method: "POST",
+      headers: withVisitorHeaders(),
       body: formData,
     });
   },
@@ -272,4 +272,32 @@ export const assistantApi = {
 
   getSession: (id: number, token: string) =>
     apiRequest(`/assistant/sessions/${id}`, { token }),
+};
+
+export const policyApi = {
+  getMyPolicy: (token: string, contractType = "general", jurisdiction = "CN") =>
+    apiRequest(`/policy/me?contract_type=${encodeURIComponent(contractType)}&jurisdiction=${encodeURIComponent(jurisdiction)}`, { token }),
+  parsePreview: (token: string, standardText: string) =>
+    apiRequest("/policy/me/parse-preview", {
+      method: "POST",
+      token,
+      body: JSON.stringify({ standard_text: standardText }),
+    }),
+  updateMyPolicy: (
+    token: string,
+    data: { standard_text: string; prefer_user_standard: boolean; fallback_to_default: boolean },
+    contractType = "general",
+    jurisdiction = "CN"
+  ) =>
+    apiRequest(`/policy/me?contract_type=${encodeURIComponent(contractType)}&jurisdiction=${encodeURIComponent(jurisdiction)}`, {
+      method: "PUT",
+      token,
+      body: JSON.stringify(data),
+    }),
+  suggestContractType: (token: string, text: string) =>
+    apiRequest("/policy/suggest-contract-type", {
+      method: "POST",
+      token,
+      body: JSON.stringify({ text }),
+    }),
 };

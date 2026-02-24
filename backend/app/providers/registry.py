@@ -68,7 +68,7 @@ class ProviderRegistry:
     def load_from_directory(self, config_dir: Path) -> None:
         """Load all provider configs from a directory."""
         if not config_dir.exists():
-            logger.warning(f"Provider config directory not found: {config_dir}")
+            logger.warning("Provider config directory not found")
             return
         
         for yaml_file in config_dir.glob("*.yaml"):
@@ -85,8 +85,8 @@ class ProviderRegistry:
                         logger.info(f"Loaded provider: {provider_config.name} ({provider_id})")
                     else:
                         logger.debug(f"Provider disabled: {provider_config.name}")
-            except Exception as e:
-                logger.error(f"Failed to load provider config {yaml_file}: {e}")
+            except Exception:
+                logger.error("Failed to load provider config")
     
     def get_chat_client(
         self,

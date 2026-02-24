@@ -65,7 +65,7 @@ class OpenAICompatChatClient(ChatClient):
                     finish_reason=choice.get("finish_reason"),
                 )
             except httpx.HTTPStatusError as e:
-                logger.error(f"Chat API error: {e.response.text}")
+                logger.error(f"Chat API error: status={e.response.status_code}")
                 raise
             except Exception as e:
                 logger.error(f"Chat request failed: {e}")
@@ -167,7 +167,7 @@ class OpenAICompatEmbeddingClient(EmbeddingClient):
                 
                 return results
             except httpx.HTTPStatusError as e:
-                logger.error(f"Embedding API error: {e.response.text}")
+                logger.error(f"Embedding API error: status={e.response.status_code}")
                 raise
             except Exception as e:
                 logger.error(f"Embedding request failed: {e}")

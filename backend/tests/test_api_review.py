@@ -150,3 +150,59 @@ class TestAssistantAPI:
             assert list_resp.status_code == 200
             sessions = list_resp.json()
             assert len(sessions) >= 1
+
+
+@pytest.mark.asyncio
+class TestPolicyAPI:
+    """Test policy endpoints."""
+
+    async def test_policy_endpoints_with_auth(self, app):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            await client.post(
+                "/api/auth/register",
+                json={"email": "policy@example.com", "password": "PolicyPass123"},
+            )
+            login_resp = await client.post(
+                "/api/auth/login",
+                json={"email": "policy@example.com", "password": "PolicyPass123"},
+            )
+            token = login_resp.json()["access_token"]
+
+            # preview
+            preview = await client.post(
+                "/api/policy/me/parse-preview",
+                headers={"Authorization": f"Bearer {token}"},
+                json={"standard_text": "必须审查违约责任。不得接受预付款。"},
+            )
+            assert preview.status_code == 200
+            assert "parsed_policy" in preview.json()
+
+            # update
+            updated = await client.put(
+                "/api/policy/me?contract_type=tech&jurisdiction=CN",
+                headers={"Authorization": f"Bearer {token}"},
+                json={
+                    "standard_text": "必须审查违约责任。不得接受预付款。",
+                    "prefer_user_standard": True,
+                    "fallback_to_default": True,
+                },
+            )
+            assert updated.status_code == 200
+            assert updated.json()["policy_version"].startswith("user-")
+
+            # get
+            current = await client.get(
+                "/api/policy/me?contract_type=tech&jurisdiction=CN",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            assert current.status_code == 200
+            body = current.json()
+            assert "must_review_items" in body
+            assert body["source"] in ("user", "default")
+
+    async def test_policy_requires_auth(self, app):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.get("/api/policy/me")
+            assert resp.status_code in (401, 403)

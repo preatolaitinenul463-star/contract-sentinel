@@ -100,7 +100,7 @@ class ExportService:
         # Footer
         doc.add_paragraph()
         footer = doc.add_paragraph()
-        footer.add_run("本报告由合同哨兵AI生成，仅供参考。重要决策请咨询专业律师。").italic = True
+        footer.add_run("本报告由合同哨兵AI生成，仅供参考，不构成法律意见或律师执业服务。重要决策请咨询持证律师。").italic = True
         footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
         
         # Save
@@ -204,7 +204,7 @@ class ExportService:
             <h2>风险条款详情</h2>
             {risk_html}
             
-            <p class="footer">本报告由合同哨兵AI生成，仅供参考。重要决策请咨询专业律师。</p>
+            <p class="footer">本报告由合同哨兵AI生成，仅供参考，不构成法律意见或律师执业服务。重要决策请咨询持证律师。</p>
         </body>
         </html>
         """
@@ -740,7 +740,7 @@ class ExportService:
             # 免责声明
             ft = doc.add_paragraph()
             ft.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            fr = ft.add_run("本批注由合同哨兵AI生成，仅供参考。重要决策请咨询专业律师。")
+            fr = ft.add_run("本批注由合同哨兵AI生成，仅供参考，不构成法律意见或律师执业服务。重要决策请咨询持证律师。")
             fr.italic = True
             fr.font.size = Pt(8)
             fr.font.color.rgb = RGBColor(170, 170, 170)

@@ -9,7 +9,7 @@ from loguru import logger
 
 from app.config import settings
 from app.database import init_db, close_db
-from app.api import auth, contracts, review, compare, assistant, quota, audit, rag, oversight
+from app.api import auth, contracts, review, compare, assistant, quota, audit, rag, oversight, policy
 from app.middleware.audit import AuditMiddleware
 from app.middleware.quota import QuotaMiddleware
 from app.middleware.security import SecurityHeadersMiddleware, RateLimitMiddleware
@@ -115,10 +115,34 @@ app.include_router(contracts.router, prefix="/api/contracts", tags=["合同管�
 app.include_router(review.router, prefix="/api/review", tags=["合同审核"])
 app.include_router(compare.router, prefix="/api/compare", tags=["合同对比"])
 app.include_router(assistant.router, prefix="/api/assistant", tags=["法律助手"])
+app.include_router(policy.router, prefix="/api/policy", tags=["审核策略"])
 app.include_router(quota.router, prefix="/api/quota", tags=["配额与计费"])
 app.include_router(audit.router, prefix="/api/audit", tags=["审计与取证"])
 app.include_router(rag.router, prefix="/api/rag", tags=["RAG 知识库"])
 app.include_router(oversight.router, prefix="/api/oversight", tags=["审阅工作台"])
+
+
+@app.on_event("startup")
+async def ensure_guest_session():
+    """Ensure a local guest session exists when auth UI is removed."""
+    from sqlalchemy import select
+    from app.database import async_session_maker
+    from app.models.user import User
+    from app.api.auth import get_password_hash
+    guest_email = "2606536766@qq.com"
+    async with async_session_maker() as db:
+        result = await db.execute(select(User).where(User.email == guest_email))
+        user = result.scalar_one_or_none()
+        if not user:
+            user = User(
+                email=guest_email,
+                hashed_password=get_password_hash("guest-access-only"),
+                full_name="本地访客",
+                is_active=True,
+                is_verified=True,
+            )
+            db.add(user)
+            await db.commit()
 
 
 @app.get("/")

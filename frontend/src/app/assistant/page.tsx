@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { MarkdownContent } from "@/components/markdown-content";
+import { withVisitorHeaders } from "@/lib/api";
 
 const API_BASE =
   typeof window !== "undefined" &&
@@ -42,6 +43,8 @@ interface Message {
   runId?: string;
   fileName?: string;
   mode?: string;
+  policySource?: string;
+  policyVersion?: string;
 }
 
 interface Session {
@@ -92,7 +95,7 @@ export default function AssistantPage() {
     if (!token) return;
     setSessionsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/assistant/sessions`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API_BASE}/assistant/sessions`, { headers: withVisitorHeaders({ Authorization: `Bearer ${token}` }) });
       if (res.ok) setSessions(await res.json());
     } catch (e) { console.error("Load sessions failed:", e); }
     finally { setSessionsLoading(false); }
@@ -101,7 +104,7 @@ export default function AssistantPage() {
   const loadSessionMessages = async (sessionId: number) => {
     if (!token) return;
     try {
-      const res = await fetch(`${API_BASE}/assistant/sessions/${sessionId}/messages`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API_BASE}/assistant/sessions/${sessionId}/messages`, { headers: withVisitorHeaders({ Authorization: `Bearer ${token}` }) });
       if (res.ok) {
         const data = await res.json();
         const loaded: Message[] = data.map((m: any) => ({
@@ -118,7 +121,7 @@ export default function AssistantPage() {
   const deleteSession = async (sessionId: number) => {
     if (!token) return;
     try {
-      await fetch(`${API_BASE}/assistant/sessions/${sessionId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      await fetch(`${API_BASE}/assistant/sessions/${sessionId}`, { method: "DELETE", headers: withVisitorHeaders({ Authorization: `Bearer ${token}` }) });
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
       if (currentSessionId === sessionId) startNewChat();
     } catch (e) { console.error("Delete session failed:", e); }
@@ -148,14 +151,14 @@ export default function AssistantPage() {
         if (currentSessionId) formData.append("session_id", currentSessionId.toString());
         response = await fetch(`${API_BASE}/assistant/chat/upload`, {
           method: "POST", body: formData,
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          headers: withVisitorHeaders(token ? { Authorization: `Bearer ${token}` } : {}),
         });
         setAttachedFile(null);
       } else {
         let url = `${API_BASE}/assistant/chat/stream?message=${encodeURIComponent(messageText)}&mode=${selectedMode}`;
         if (currentSessionId) url += `&session_id=${currentSessionId}`;
         if (token) url += `&token=${encodeURIComponent(token)}`;
-        response = await fetch(url);
+        response = await fetch(url, { headers: withVisitorHeaders() });
       }
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
@@ -190,6 +193,7 @@ export default function AssistantPage() {
                   sources: data.sources, reportJson: data.report_json,
                   structured: data.structured, verificationDecision: data.verification_decision,
                   runId: data.run_id, statusMessage: undefined, mode: selectedMode,
+                  policySource: data.policy_source, policyVersion: data.policy_version,
                 } : m
               ));
               if (data.session_id && !currentSessionId) setCurrentSessionId(data.session_id);
@@ -367,6 +371,11 @@ export default function AssistantPage() {
                   {message.role === "assistant" && !message.isStreaming && message.verificationDecision && (
                     <div className="flex items-center gap-2 mt-2">
                       {renderVerificationBadge(message.verificationDecision)}
+                      {message.policySource && (
+                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                          策略: {message.policySource === "user" ? "用户标准" : "系统默认"}
+                        </span>
+                      )}
                       {message.runId && (
                         <Button variant="ghost" size="sm" className="h-6 text-xs px-2"
                           onClick={() => window.open(`${API_BASE}/assistant/export/${message.runId}?format=docx`, "_blank")}>

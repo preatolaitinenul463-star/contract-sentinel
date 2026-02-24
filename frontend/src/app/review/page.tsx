@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, formatFileSize } from "@/lib/utils";
+import { useAuthStore } from "@/lib/store";
+import { policyApi, withVisitorHeaders } from "@/lib/api";
 
 type ReviewStage = "upload" | "reviewing" | "complete";
 type ReviewMode = "review" | "redline";
@@ -78,6 +80,7 @@ const API_BASE =
     : "/api";
 
 export default function ReviewPage() {
+  const { token } = useAuthStore();
   const [stage, setStage] = useState<ReviewStage>("upload");
   const [mode, setMode] = useState<ReviewMode>("review");
   const [file, setFile] = useState<File | null>(null);
@@ -89,19 +92,38 @@ export default function ReviewPage() {
   const [partyRole, setPartyRole] = useState("party_b");
   const [powerDynamic, setPowerDynamic] = useState("weak");
   const [summary, setSummary] = useState("");
+  const [currentRunId, setCurrentRunId] = useState<string | null>(null);
   const [stats, setStats] = useState({ high: 0, medium: 0, low: 0, total: 0 });
   const [streamText, setStreamText] = useState("");
   const [reviewId, setReviewId] = useState<number | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadName, setDownloadName] = useState<string | null>(null);
   const [expandedRisk, setExpandedRisk] = useState<number | null>(null);
+  const [typeSuggestion, setTypeSuggestion] = useState<{ suggested_contract_type: string; confidence: number } | null>(null);
   const streamRef = useRef<string>("");
 
   const [agents, setAgents] = useState<AgentStatus[]>(REVIEW_AGENTS.map((a) => ({ ...a })));
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length > 0) setFile(acceptedFiles[0]);
-  }, []);
+    if (acceptedFiles.length > 0) {
+      const picked = acceptedFiles[0];
+      setFile(picked);
+      if (token) {
+        picked.text().then(async (txt) => {
+          if (!txt || txt.trim().length < 30) return;
+          try {
+            const suggestion: any = await policyApi.suggestContractType(token, txt.slice(0, 4000));
+            setTypeSuggestion(suggestion);
+            if (suggestion.confidence >= 0.7) {
+              setContractType(suggestion.suggested_contract_type);
+            }
+          } catch {
+            // Ignore suggestion errors to avoid blocking upload.
+          }
+        }).catch(() => {});
+      }
+    }
+  }, [token]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -152,6 +174,7 @@ export default function ReviewPage() {
       if (st) setStats(st);
       if (all_risks) setRiskItems(all_risks);
       if (data.review_id) setReviewId(data.review_id);
+      if (data.run_id) setCurrentRunId(data.run_id);
       if (data.download_url) setDownloadUrl(data.download_url);
       if (data.download_name) setDownloadName(data.download_name);
     }
@@ -165,7 +188,7 @@ export default function ReviewPage() {
     formData.append("party_role", partyRole);
     formData.append("power_dynamic", powerDynamic);
 
-    const response = await fetch(url, { method: "POST", body: formData });
+    const response = await fetch(url, { method: "POST", headers: withVisitorHeaders(), body: formData });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const reader = response.body?.getReader();
@@ -194,6 +217,7 @@ export default function ReviewPage() {
     streamRef.current = "";
     setProgress(0);
     setReviewId(null);
+    setCurrentRunId(null);
     setDownloadUrl(null);
     setDownloadName(null);
     setExpandedRisk(null);
@@ -235,6 +259,10 @@ export default function ReviewPage() {
 
   const startRedline = async () => {
     if (!file) return;
+    if (!file.name.endsWith(".docx")) {
+      toastError("批阅模式仅支持 .docx 文件");
+      return;
+    }
     setMode("redline");
     setStage("reviewing");
     resetState();
@@ -341,6 +369,12 @@ export default function ReviewPage() {
               </select>
             </div>
           </div>
+          {typeSuggestion && (
+            <div className="rounded-lg border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+              自动识别建议：{typeSuggestion.suggested_contract_type}（置信度 {(typeSuggestion.confidence * 100).toFixed(0)}%）
+              {typeSuggestion.confidence < 0.7 ? "，请确认合同类型后再开始审核。" : "，已自动应用。"}
+            </div>
+          )}
 
           {/* 操作按钮 */}
           <div className="flex gap-3">
@@ -349,9 +383,9 @@ export default function ReviewPage() {
               智能审核
             </Button>
             <Button
-              size="lg" variant="outline"
-              className="flex-1 h-12 text-base"
-              disabled={!file || !file.name.endsWith(".docx")}
+              size="lg"
+              className="flex-1 h-12 text-base bg-primary/90 text-primary-foreground hover:bg-primary"
+              disabled={!file}
               onClick={startRedline}
             >
               <PenTool className="mr-2 h-5 w-5" />
@@ -553,6 +587,61 @@ export default function ReviewPage() {
               <div className="mt-4 rounded-xl bg-muted/50 p-4">
                 <p className="text-sm font-medium mb-1.5">总结</p>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{summary}</p>
+              </div>
+            )}
+            {riskItems.length > 0 && (
+              <div className="mt-4 rounded-xl border p-4 space-y-2">
+                <p className="text-sm font-medium">本次审核是否有帮助？</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      const runId = currentRunId || "";
+                      if (!runId || !token) return;
+                      await fetch(`${API_BASE}/review/feedback/${runId}`, {
+                        method: "POST",
+                        headers: withVisitorHeaders({ "Content-Type": "application/json", Authorization: `Bearer ${token}` }),
+                        body: JSON.stringify({ helpful: true, issue_type: "other" }),
+                      });
+                      toastSuccess("感谢反馈");
+                    }}
+                  >
+                    有帮助
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      const runId = currentRunId || "";
+                      if (!runId || !token) return;
+                      await fetch(`${API_BASE}/review/feedback/${runId}`, {
+                        method: "POST",
+                        headers: withVisitorHeaders({ "Content-Type": "application/json", Authorization: `Bearer ${token}` }),
+                        body: JSON.stringify({ helpful: false, issue_type: "false_positive" }),
+                      });
+                      toastSuccess("已记录为误报反馈");
+                    }}
+                  >
+                    误报较多
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      const runId = currentRunId || "";
+                      if (!runId || !token) return;
+                      await fetch(`${API_BASE}/review/feedback/${runId}`, {
+                        method: "POST",
+                        headers: withVisitorHeaders({ "Content-Type": "application/json", Authorization: `Bearer ${token}` }),
+                        body: JSON.stringify({ helpful: false, issue_type: "missed_risk" }),
+                      });
+                      toastSuccess("已记录为漏报反馈");
+                    }}
+                  >
+                    漏掉风险
+                  </Button>
+                </div>
               </div>
             )}
           </div>

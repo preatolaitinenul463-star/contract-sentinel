@@ -84,7 +84,7 @@ class Settings(BaseSettings):
     smtp_port: int = 587
     smtp_user: Optional[str] = None
     smtp_password: Optional[str] = None
-    from_email: str = "noreply@contract-sentinel.ai"
+    from_email: str = "2606536766@qq.com"
 
     # CORS - comma-separated origins, defaults to localhost for development
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
